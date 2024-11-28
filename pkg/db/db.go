@@ -1,29 +1,58 @@
 package db
 
 import (
-	"database/sql"
-	"fmt"
+	"time"
 
-	_ "github.com/mattn/go-sqlite3"
+	"database/sql"
+
+	_ "modernc.org/sqlite"
 )
 
-func InitDB(filePath string) (*sql.DB, error) {
-	db, err := sql.Open("sqlite3", filePath)
+type DB struct {
+	conn *sql.DB
+}
+
+func NewDB(filePath string) (*DB, error) {
+	conn, err := sql.Open("sqlite", filePath)
 	if err != nil {
 		return nil, err
 	}
 
-	createTableQuery := `
+	// Создание таблицы, если ее нет
+	query := `
 	CREATE TABLE IF NOT EXISTS thumbnails (
-		id TEXT PRIMARY KEY,
-		video_id TEXT UNIQUE NOT NULL,
-		file_path TEXT NOT NULL,
-		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		video_url TEXT UNIQUE,
+		image_data BLOB,
+		created_at TIMESTAMP
 	);
 	`
-	if _, err := db.Exec(createTableQuery); err != nil {
-		return nil, fmt.Errorf("Failed to create table: %v", err)
+	_, err = conn.Exec(query)
+	if err != nil {
+		return nil, err
 	}
 
-	return db, nil
+	return &DB{conn: conn}, nil
+}
+
+func (db *DB) GetThumbnail(videoURL string) ([]byte, error) {
+	query := `SELECT image_data FROM thumbnails WHERE video_url = ?`
+	row := db.conn.QueryRow(query, videoURL)
+
+	var imageData []byte
+	err := row.Scan(&imageData)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	return imageData, err
+}
+
+func (db *DB) SaveThumbnail(videoURL string, imageData []byte) error {
+	query := `
+	INSERT INTO thumbnails (video_url, image_data, created_at)
+	VALUES (?, ?, ?)
+	ON CONFLICT(video_url) DO UPDATE SET image_data = excluded.image_data, created_at = excluded.created_at;
+	`
+	_, err := db.conn.Exec(query, videoURL, imageData, time.Now())
+	return err
 }

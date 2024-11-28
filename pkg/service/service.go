@@ -2,43 +2,38 @@ package service
 
 import (
 	"context"
-	"database/sql"
-	"fmt"
-
-	"thumbnail-service/pkg/downloader"
+	"thumbnail-service/pkg/db"
 	pb "thumbnail-service/proto"
 )
 
-type server struct {
-	db *sql.DB
+type ThumbnailService struct {
 	pb.UnimplementedThumbnailServiceServer
+	db *db.DB
 }
 
-func NewServer(db *sql.DB) *server {
-	return &server{db: db}
+func NewThumbnailService(db *db.DB) *ThumbnailService {
+	return &ThumbnailService{db: db}
 }
 
-func (s *server) GetThumbnail(ctx context.Context, req *pb.GetThumbnailRequest) (*pb.GetThumbnailResponse, error) {
-	videoID := req.GetVideoId()
-
-	// Проверка кэша
-	row := s.db.QueryRow("SELECT file_path FROM thumbnails WHERE video_id = ?", videoID)
-	var filePath string
-	if err := row.Scan(&filePath); err == nil {
-		return &pb.GetThumbnailResponse{FilePath: filePath}, nil
-	}
-
-	// Загрузка превью
-	filePath, err := downloader.DownloadThumbnail(videoID)
+func (s *ThumbnailService) GetThumbnail(ctx context.Context, req *pb.ThumbnailRequest) (*pb.ThumbnailResponse, error) {
+	// Проверка кеша
+	imageData, err := s.db.GetThumbnail(req.VideoUrl)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to download thumbnail: %v", err)
+		return nil, err
 	}
 
-	// Кэширование в базе данных
-	_, err = s.db.Exec("INSERT INTO thumbnails (id, video_id, file_path) VALUES (?, ?, ?)", videoID, videoID, filePath)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to cache thumbnail: %v", err)
+	// Если в кэше нет, скачиваем
+	if imageData == nil {
+		imageData, err = DownloadThumbnail(req.VideoUrl)
+		if err != nil {
+			return nil, err
+		}
+
+		// Сохраняем в кэш
+		if err := s.db.SaveThumbnail(req.VideoUrl, imageData); err != nil {
+			return nil, err
+		}
 	}
 
-	return &pb.GetThumbnailResponse{FilePath: filePath}, nil
+	return &pb.ThumbnailResponse{ImageData: imageData}, nil
 }

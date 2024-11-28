@@ -1,30 +1,33 @@
-package downloader
+package service
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
-	"os"
+	"regexp"
 )
 
-func DownloadThumbnail(videoID string) (string, error) {
-	url := fmt.Sprintf("https://img.youtube.com/vi/%s/maxresdefault.jpg", videoID)
-	resp, err := http.Get(url)
-	if err != nil || resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("Failed to fetch thumbnail: %v", err)
+var youtubeThumbnailURLRegex = regexp.MustCompile(`https?://(?:www\.)?youtube\.com/watch\?v=([^&]+)`)
+
+func DownloadThumbnail(videoURL string) ([]byte, error) {
+	matches := youtubeThumbnailURLRegex.FindStringSubmatch(videoURL)
+	if len(matches) < 2 {
+		return nil, errors.New("invalid YouTube URL")
+	}
+
+	videoID := matches[1]
+	thumbnailURL := fmt.Sprintf("https://img.youtube.com/vi/%s/maxresdefault.jpg", videoID)
+
+	resp, err := http.Get(thumbnailURL)
+	if err != nil {
+		return nil, err
 	}
 	defer resp.Body.Close()
 
-	filePath := fmt.Sprintf("%s.jpg", videoID)
-	file, err := os.Create(filePath)
-	if err != nil {
-		return "", fmt.Errorf("Failed to create file: %v", err)
-	}
-	defer file.Close()
-
-	if _, err := io.Copy(file, resp.Body); err != nil {
-		return "", fmt.Errorf("Failed to save thumbnail: %v", err)
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.New("failed to download thumbnail")
 	}
 
-	return filePath, nil
+	return io.ReadAll(resp.Body)
 }
