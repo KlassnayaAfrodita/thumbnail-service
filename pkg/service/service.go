@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"thumbnail-service/pkg/db"
 	"thumbnail-service/proto"
@@ -21,26 +20,36 @@ func NewThumbnailService(db db.ThumbnailStorage) *ThumbnailService {
 
 // Реализация метода GetThumbnail
 func (s *ThumbnailService) GetThumbnail(ctx context.Context, req *proto.ThumbnailRequest) (*proto.ThumbnailResponse, error) {
-	// Получаем миниатюру из базы данных
-	imageData, err := s.db.GetThumbnail(req.VideoUrl)
+	videoURL := req.GetVideoUrl()
+	log.Printf("Received request for video URL: %s\n", videoURL)
+
+	// Проверяем кэш
+	imageData, err := s.db.GetThumbnail(videoURL)
 	if err != nil {
-		log.Printf("Failed to get thumbnail for %s: %v", req.VideoUrl, err)
-		return nil, fmt.Errorf("failed to get thumbnail: %w", err)
+		log.Printf("Error retrieving thumbnail from cache: %v", err)
+		return nil, err
 	}
 
-	if imageData == nil {
-		// Если нет в кэше, скачиваем и сохраняем
-		// Здесь можно добавить логику скачивания миниатюры
-		log.Printf("Thumbnail not found for %s, downloading...\n", req.VideoUrl)
-		imageData = []byte("dummy_image_data") // Это просто пример, замените на реальную логику
-
-		err = s.db.SaveThumbnail(req.VideoUrl, imageData)
-		if err != nil {
-			log.Printf("Failed to save thumbnail for %s: %v", req.VideoUrl, err)
-			return nil, fmt.Errorf("failed to save thumbnail: %w", err)
-		}
+	// Если данные найдены в кэше
+	if imageData != nil {
+		log.Printf("Thumbnail retrieved from cache, size: %d bytes\n", len(imageData))
+		return &proto.ThumbnailResponse{ImageData: imageData}, nil
 	}
 
-	// Возвращаем успешный ответ
+	// Загружаем миниатюру с YouTube
+	imageData, err = DownloadThumbnail(videoURL)
+	if err != nil {
+		log.Printf("Error downloading thumbnail: %v", err)
+		return nil, err
+	}
+
+	// Сохраняем миниатюру в кэш
+	err = s.db.SaveThumbnail(videoURL, imageData)
+	if err != nil {
+		log.Printf("Error saving thumbnail to cache: %v", err)
+		// Мы все равно вернем данные, даже если кэширование не удалось
+	}
+
+	log.Printf("Thumbnail downloaded and cached, size: %d bytes\n", len(imageData))
 	return &proto.ThumbnailResponse{ImageData: imageData}, nil
 }

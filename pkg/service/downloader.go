@@ -29,5 +29,12 @@ func DownloadThumbnail(videoURL string) ([]byte, error) {
 		return nil, errors.New("failed to download thumbnail")
 	}
 
-	return io.ReadAll(resp.Body)
+	imageData, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	// Логирование размера загруженного изображения
+	fmt.Printf("Downloaded thumbnail size: %d bytes\n", len(imageData))
+	return imageData, nil
 }
