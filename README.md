@@ -24,20 +24,18 @@ gRPC-сервис для загрузки превью видеороликов 
    cd youtube-thumbnail-grpc
 Установите зависимости:
 
-bash
-Копировать код
-go mod tidy
+```bash
+go mod tidy```
 Сгенерируйте gRPC-код из .proto:
 
-bash
-Копировать код
-protoc --go_out=. --go-grpc_out=. proto/thumbnail.proto
+```bash
+protoc --go_out=. --go-grpc_out=. proto/thumbnail.proto```
 
 Запуск сервера
 Запустите сервер:
 
-bash
-Копировать код
-go run cmd/server/main.go
+```bash
+go run cmd/server/main.go```
 Сервер начнет слушать на localhost:50051.
+
 
