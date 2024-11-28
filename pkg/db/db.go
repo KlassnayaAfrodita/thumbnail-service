@@ -1,12 +1,17 @@
 package db
 
 import (
-	"time"
-
 	"database/sql"
+	"time"
 
 	_ "modernc.org/sqlite"
 )
+
+// Интерфейс для работы с хранилищем миниатюр
+type ThumbnailStorage interface {
+	GetThumbnail(videoURL string) ([]byte, error)
+	SaveThumbnail(videoURL string, imageData []byte) error
+}
 
 type DB struct {
 	conn *sql.DB

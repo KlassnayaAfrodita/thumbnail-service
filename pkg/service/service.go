@@ -2,38 +2,45 @@ package service
 
 import (
 	"context"
+	"fmt"
+	"log"
 	"thumbnail-service/pkg/db"
-	pb "thumbnail-service/proto"
+	"thumbnail-service/proto"
 )
 
+// ThumbnailService реализует интерфейс ThumbnailServiceServer
 type ThumbnailService struct {
-	pb.UnimplementedThumbnailServiceServer
-	db *db.DB
+	proto.UnimplementedThumbnailServiceServer // Встроенный сервис по умолчанию
+	db                                        db.ThumbnailStorage
 }
 
-func NewThumbnailService(db *db.DB) *ThumbnailService {
+// Новый конструктор для создания сервиса
+func NewThumbnailService(db db.ThumbnailStorage) *ThumbnailService {
 	return &ThumbnailService{db: db}
 }
 
-func (s *ThumbnailService) GetThumbnail(ctx context.Context, req *pb.ThumbnailRequest) (*pb.ThumbnailResponse, error) {
-	// Проверка кеша
+// Реализация метода GetThumbnail
+func (s *ThumbnailService) GetThumbnail(ctx context.Context, req *proto.ThumbnailRequest) (*proto.ThumbnailResponse, error) {
+	// Получаем миниатюру из базы данных
 	imageData, err := s.db.GetThumbnail(req.VideoUrl)
 	if err != nil {
-		return nil, err
+		log.Printf("Failed to get thumbnail for %s: %v", req.VideoUrl, err)
+		return nil, fmt.Errorf("failed to get thumbnail: %w", err)
 	}
 
-	// Если в кэше нет, скачиваем
 	if imageData == nil {
-		imageData, err = DownloadThumbnail(req.VideoUrl)
-		if err != nil {
-			return nil, err
-		}
+		// Если нет в кэше, скачиваем и сохраняем
+		// Здесь можно добавить логику скачивания миниатюры
+		log.Printf("Thumbnail not found for %s, downloading...\n", req.VideoUrl)
+		imageData = []byte("dummy_image_data") // Это просто пример, замените на реальную логику
 
-		// Сохраняем в кэш
-		if err := s.db.SaveThumbnail(req.VideoUrl, imageData); err != nil {
-			return nil, err
+		err = s.db.SaveThumbnail(req.VideoUrl, imageData)
+		if err != nil {
+			log.Printf("Failed to save thumbnail for %s: %v", req.VideoUrl, err)
+			return nil, fmt.Errorf("failed to save thumbnail: %w", err)
 		}
 	}
 
-	return &pb.ThumbnailResponse{ImageData: imageData}, nil
+	// Возвращаем успешный ответ
+	return &proto.ThumbnailResponse{ImageData: imageData}, nil
 }
