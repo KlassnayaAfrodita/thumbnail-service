@@ -21,7 +21,7 @@ gRPC-сервис для загрузки превью видеороликов 
 1. Клонируйте репозиторий:
    ```bash
    git clone <repository_url>
-   cd thumbnail-service```
+   cd thumbnail-service
 Установите зависимости:
 
 ```bash
