@@ -21,21 +21,21 @@ gRPC-сервис для загрузки превью видеороликов 
 1. Клонируйте репозиторий:
    ```bash
    git clone <repository_url>
-   cd thumbnail-service
+   cd thumbnail-service```
 Установите зависимости:
 
 ```bash
-go mod tidy
+go mod tidy```
 Сгенерируйте gRPC-код из .proto:
 
 ```bash
-protoc --go_out=. --go-grpc_out=. proto/thumbnail.proto
+protoc --go_out=. --go-grpc_out=. proto/thumbnail.proto```
 
 Запуск сервера
 Запустите сервер:
 
 ```bash
-go run cmd/server/main.go
+go run cmd/server/main.go```
 Сервер начнет слушать на localhost:50051.
 
 
