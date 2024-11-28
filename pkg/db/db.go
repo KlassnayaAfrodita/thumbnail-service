@@ -1,7 +1,9 @@
 package db
 
 import (
+	"crypto/md5"
 	"database/sql"
+	"fmt"
 	"time"
 
 	_ "modernc.org/sqlite"
@@ -49,7 +51,13 @@ func (db *DB) GetThumbnail(videoURL string) ([]byte, error) {
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
-	return imageData, err
+	if err != nil {
+		return nil, err
+	}
+
+	// Логирование размера извлеченных данных
+	fmt.Printf("Retrieved thumbnail size: %d bytes\n", len(imageData))
+	return imageData, nil
 }
 
 func (db *DB) SaveThumbnail(videoURL string, imageData []byte) error {
@@ -59,5 +67,17 @@ func (db *DB) SaveThumbnail(videoURL string, imageData []byte) error {
 	ON CONFLICT(video_url) DO UPDATE SET image_data = excluded.image_data, created_at = excluded.created_at;
 	`
 	_, err := db.conn.Exec(query, videoURL, imageData, time.Now())
-	return err
+	if err != nil {
+		return err
+	}
+
+	// Логирование хэша для сохраненных данных
+	hash := calculateHash(imageData)
+	fmt.Printf("Saved thumbnail hash: %s\n", hash)
+	return nil
+}
+
+// calculateHash вычисляет MD5-хэш данных
+func calculateHash(data []byte) string {
+	return fmt.Sprintf("%x", md5.Sum(data))
 }
