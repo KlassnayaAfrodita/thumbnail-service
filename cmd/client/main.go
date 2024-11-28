@@ -26,7 +26,7 @@ func main() {
 		log.Fatalf("No video URLs provided")
 	}
 
-	conn, err := grpc.Dial("localhost:50051", grpc.WithInsecure())
+	conn, err := grpc.Dial("localhost:50051", grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
 		log.Fatalf("Failed to connect to gRPC server: %v", err)
 	}
