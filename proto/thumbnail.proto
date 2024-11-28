@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package thumbnail;
+
+option go_package = "./pkg/service;service";  // Указываем путь для импорта Go
+
+service ThumbnailService {
+    rpc GetThumbnail (GetThumbnailRequest) returns (GetThumbnailResponse);
+}
+
+message GetThumbnailRequest {
+    string video_url = 1;
+}
+
+message GetThumbnailResponse {
+    string thumbnail_url = 1;
+}
