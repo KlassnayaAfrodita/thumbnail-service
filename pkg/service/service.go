@@ -47,7 +47,6 @@ func (s *ThumbnailService) GetThumbnail(ctx context.Context, req *proto.Thumbnai
 	err = s.db.SaveThumbnail(videoURL, imageData)
 	if err != nil {
 		log.Printf("Error saving thumbnail to cache: %v", err)
-		// Мы все равно вернем данные, даже если кэширование не удалось
 	}
 
 	log.Printf("Thumbnail downloaded and cached, size: %d bytes\n", len(imageData))
