@@ -21,19 +21,27 @@ gRPC-сервис для загрузки превью видеороликов 
 Клонируйте репозиторий:  
    ```git clone <repository_url>```  
 ```cd thumbnail-service```  
+
 Установите зависимости:  
-
 ```go mod tidy```  
-Сгенерируйте gRPC-код из .proto:  
 
+Сгенерируйте gRPC-код из .proto:  
 ```protoc --go_out=. --go-grpc_out=. proto/thumbnail.proto```  
 
 Запуск сервера  
 Запустите сервер:  
-
 ```go run cmd/server/main.go```  
 Сервер начнет слушать на localhost:50051.
 
+Запустите клиента:  
+``` go run cmd/client/main.go ссылка_на_видео```  
+или  
+``` go run cmd/client/main.go --async ссылка_на_видео ссылка_на_видео```
+После изображение скачается и его путь добавиться в бд    
+
+### Сторонние библиотеки
+"google.golang.org/grpc" - для работы и генерации gRPC  
+"modernc.org/sqlite" - движок для работы с бд  
 ### Возможные ошибки
 1. Error downloading thumbnail: read tcp: wsarecv: An existing connection was forcibly closed by the remote host.  
 Причины ошибки:  
