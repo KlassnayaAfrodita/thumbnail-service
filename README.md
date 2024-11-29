@@ -25,9 +25,6 @@ gRPC-сервис для загрузки превью видеороликов 
 Установите зависимости:  
 ```go mod tidy```  
 
-Сгенерируйте gRPC-код из .proto:  
-```protoc --go_out=. --go-grpc_out=. proto/thumbnail.proto```  
-
 Запуск сервера  
 Запустите сервер:  
 ```go run cmd/server/main.go```  
